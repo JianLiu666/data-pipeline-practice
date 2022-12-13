@@ -1,0 +1,6 @@
+# files
+env.yaml
+
+# folders
+deployments/data
+__pycache__
