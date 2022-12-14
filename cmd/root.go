@@ -1,10 +1,9 @@
 package cmd
 
 import (
-	"fmt"
 	"os"
-	"practice/internal/config"
 
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -24,12 +23,9 @@ func init() {
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		logrus.Panicln(os.Stderr, err)
 		os.Exit(1)
 	}
-
-	cfg := config.NewFromViper()
-	fmt.Println(cfg)
 }
 
 func initConfig() {
