@@ -24,4 +24,5 @@
 ## Deployment
 
 - [ ] Docker-compose configuration file
-- [ ] Study relational database migration tool `flyway`
+- [x] Study relational database migration tool `flyway`
+  - [x] Used `golang-migrate` cli tool
