@@ -26,3 +26,4 @@
 - [ ] Docker-compose configuration file
 - [x] Study relational database migration tool `flyway`
   - [x] Used `golang-migrate` cli tool
+- [ ] MySQL master & slave
