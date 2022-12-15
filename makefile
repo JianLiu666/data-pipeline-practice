@@ -8,7 +8,7 @@ MYSQL_DATABASE ?= development
 MYSQL_PORT ?= 3306
 MYSQL_DSN ?= $(MYSQL_USER):$(MYSQL_PASSWORD)@tcp($(MYSQL_HOST):$(MYSQL_PORT))/$(MYSQL_DATABASE)
 
-.PHONY: help init demo shutdown-all migrate-up migrate-down
+.PHONY: help init setup-all shutdown-all migrate-up migrate-down show-tables
 
 help:
 	@echo "Usage make [commands]\n"
@@ -26,7 +26,7 @@ init:
 	go mod download
 	go mod tidy
 
-demo:
+setup-all:
 	docker-compose -f deployments/00.infra.yaml down -v
 
 	docker-compose -f deployments/00.infra.yaml up -d
@@ -41,3 +41,6 @@ migrate-up:
 
 migrate-down:
 	echo y | migrate -database 'mysql://$(MYSQL_DSN)?multiStatements=true' -source 'file://deployments/mysql/migration' -verbose down
+
+show-tables:
+	go run main.go show_tables -f ./conf.d/env.yaml
