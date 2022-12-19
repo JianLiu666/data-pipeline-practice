@@ -17,8 +17,8 @@ type accessor struct {
 	shutdownOnce     sync.Once
 	shutdownHandlers []shutdownHandler
 
-	Config *config.Config // configuration management
-	RDB    rdb.RDB        // relational database instance
+	Config *config.Config   // configuration management
+	RDB    *rdb.MysqlClient // relational database instance
 }
 
 func BuildAccessor() *accessor {

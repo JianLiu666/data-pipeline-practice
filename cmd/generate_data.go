@@ -28,8 +28,8 @@ func RunGenerateDataCmd(cmd *cobra.Command, args []string) error {
 
 	infra.InitRDB(ctx)
 
-	// // business logic
-	// // local 維護一組資料, 併發寫入 DB 後跟 DB 比較兩邊交易結果是否一致
+	// business logic
+	// local 維護一組資料, 併發寫入 DB 後跟 DB 比較兩邊交易結果是否一致
 
 	return nil
 }
