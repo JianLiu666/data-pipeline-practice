@@ -44,3 +44,7 @@ migrate-down:
 
 show-tables:
 	go run main.go show_tables -f ./conf.d/env.yaml
+
+
+gen-data:
+	go run main.go generate_data -f ./conf.d/env.yaml
