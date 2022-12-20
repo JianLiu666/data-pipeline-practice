@@ -8,7 +8,7 @@ import (
 var cfg *Config
 
 type Config struct {
-	MySQL MysqlOpts `mapstructure:"mysql"`
+	RDB RdbOpts `mapstructure:"rdb"`
 }
 
 func NewFromViper() *Config {
@@ -29,17 +29,22 @@ func NewFromViper() *Config {
 }
 
 func NewFromDefault() *Config {
-	mysql := MysqlOpts{
-		Address:         "mysql:3306",
-		UserName:        "root",
-		Password:        "0",
-		DBName:          "development",
-		MaxIdleConns:    10,
-		MaxOpenConns:    100,
-		ConnMaxLifetime: 60,
+	rdb := RdbOpts{
+		Driver: "mysql",
+		MysqlOpts: MysqlOpts{
+			Address:         "mysql:3306",
+			UserName:        "root",
+			Password:        "0",
+			DBName:          "development",
+			MaxIdleConns:    10,
+			MaxOpenConns:    100,
+			ConnMaxLifetime: 60,
+		},
 	}
+
 	cfg = &Config{
-		MySQL: mysql,
+		RDB: rdb,
 	}
+
 	return cfg
 }

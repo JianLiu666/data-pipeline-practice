@@ -2,7 +2,6 @@ package accessor
 
 import (
 	"context"
-	"fmt"
 	"practice/internal/config"
 	"practice/internal/storage/rdb"
 	"sync"
@@ -17,8 +16,8 @@ type accessor struct {
 	shutdownOnce     sync.Once
 	shutdownHandlers []shutdownHandler
 
-	Config *config.Config   // configuration management
-	RDB    *rdb.MysqlClient // relational database instance
+	Config *config.Config // configuration management
+	RDB    *rdb.Rdb       // relational database instance
 }
 
 func BuildAccessor() *accessor {
@@ -39,18 +38,20 @@ func (a *accessor) Close(ctx context.Context) {
 }
 
 func (a *accessor) InitRDB(ctx context.Context) {
-	dsn := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
-		a.Config.MySQL.UserName,
-		a.Config.MySQL.Password,
-		a.Config.MySQL.Address,
-		a.Config.MySQL.DBName,
-	)
-
-	a.RDB = rdb.NewMysqlClient(ctx, dsn,
-		time.Duration(a.Config.MySQL.ConnMaxLifetime)*time.Minute,
-		a.Config.MySQL.MaxOpenConns,
-		a.Config.MySQL.MaxIdleConns,
-	)
+	switch a.Config.RDB.Driver {
+	case "mysql":
+		a.RDB = rdb.NewMysqlClient(ctx,
+			a.Config.RDB.MysqlOpts.UserName,
+			a.Config.RDB.MysqlOpts.Password,
+			a.Config.RDB.MysqlOpts.Address,
+			a.Config.RDB.MysqlOpts.DBName,
+			time.Duration(a.Config.RDB.MysqlOpts.ConnMaxLifetime)*time.Minute,
+			a.Config.RDB.MysqlOpts.MaxOpenConns,
+			a.Config.RDB.MysqlOpts.MaxIdleConns,
+		)
+	default:
+		logrus.Panicf("RDB driver undifined: %v", a.Config.RDB.Driver)
+	}
 
 	a.shutdownHandlers = append(a.shutdownHandlers, func(c context.Context) {
 		a.RDB.Shutdown(c)
