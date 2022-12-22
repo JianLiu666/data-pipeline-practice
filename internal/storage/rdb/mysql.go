@@ -21,7 +21,7 @@ import (
 // @param maxOpenConns     sets the maximum number of open connections to the database.
 // @param maxIdleConns     sets the maximum amount of time a connection may be reused.
 func NewMysqlClient(ctx context.Context, userName, password, address, dbName string, connMaxLifetime time.Duration, maxOpenConns, maxIdleConns int) *Rdb {
-	dsn := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
+	dsn := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8mb4&parseTime=True&loc=Local&multiStatements=true",
 		userName,
 		password,
 		address,

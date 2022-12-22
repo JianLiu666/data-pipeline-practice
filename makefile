@@ -8,7 +8,7 @@ MYSQL_DATABASE ?= development
 MYSQL_PORT ?= 3306
 MYSQL_DSN ?= $(MYSQL_USER):$(MYSQL_PASSWORD)@tcp($(MYSQL_HOST):$(MYSQL_PORT))/$(MYSQL_DATABASE)
 
-.PHONY: help init setup-all shutdown-all migrate-up migrate-down show-tables
+.PHONY: help init setup-all shutdown-all migrate-up migrate-down show-tables gen-data concurrent-transfer
 
 help:
 	@echo "Usage make [commands]\n"
@@ -45,6 +45,8 @@ migrate-down:
 show-tables:
 	go run main.go show_tables -f ./conf.d/env.yaml
 
-
 gen-data:
 	go run main.go generate_data -f ./conf.d/env.yaml
+
+concurrent-transfer:
+	go run main.go concurrent_transfer -f ./conf.d/env.yaml
