@@ -5,6 +5,7 @@
   - [Project Layout](#project-layout)
   - [References](#references)
     - [Golang-Migrate](#golang-migrate)
+    - [RDB Isolation Level](#rdb-isolation-level)
 
 ---
 
@@ -46,3 +47,7 @@ DATA-PIPELINE-PRACTICE
 
 - [[Github] migrate CLI](https://github.com/golang-migrate/migrate/tree/master/cmd/migrate)
 - [[Blog] Go: database migrations made easy - an example using MySQL](https://www.linkedin.com/pulse/go-database-migrations-made-easy-example-using-mysql-tiago-melo/)
+
+### RDB Isolation Level
+
+ - [[Blog] MySQL中如何为单个事务设置隔离级别](https://www.jianshu.com/p/b324b368a210)
