@@ -29,7 +29,9 @@ DATA-PIPELINE-PRACTICE
  │   └─ mysql/       # MySQL 組態設定與動態連結函式庫 (dll)
  ├─ docs/         # 設計和使用者文件 (sequence, db schema, etc.)
  ├─ internal/     # 私有應用程式和函示庫的程式碼
- │   └─ config/      # 組態設定模組 (viper)
+ │   ├─ accessor/    # 基礎建設模組
+ │   ├─ config/      # 組態設定模組 (viper)
+ │   └─ storage/     # 資料庫模組
  ├─ .gitignore    
  ├─ go.mod        
  ├─ go.sum        
