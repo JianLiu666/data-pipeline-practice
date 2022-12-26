@@ -32,3 +32,4 @@
 ## Relational Database Isolation Level
 
 - [ ] 理解 MySQL gap lock & next-key lock
+- [ ] 理解 不可重複讀(Non-repeatable Read) 與 讀偏差(Read Skew) 的區別

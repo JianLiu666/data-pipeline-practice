@@ -23,6 +23,7 @@ help:
 	@echo "  gen-data             "
 	@echo "  concurrent-transfer  "
 	@echo "  dirty-read           "
+	@echo "  non-repeatable-read  "
 
 init:
 	rm -rf deployments/data
@@ -61,3 +62,6 @@ concurrent-transfer:
 
 dirty-read:
 	go run main.go dirty_read -f ./conf.d/env.yaml
+
+non-repeatable-read:
+	go run main.go non_repeatable_read -f ./conf.d/env.yaml
