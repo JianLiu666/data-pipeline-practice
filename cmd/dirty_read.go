@@ -33,6 +33,12 @@ func RunDirtyReadCmd(cmd *cobra.Command, args []string) error {
 	defer infra2.Close(ctx)
 	infra2.InitRDB(ctx)
 
+	// 模擬髒讀情境 (Dirty Read)
+	// 1. trx1 加入一筆新資料到 logs table, 但尚未 committed
+	// 2. trx2 此時向 logs table 讀取資料的所有筆數 (得到 1 筆資料)
+	// 3. trx1 執行 rollback
+	// 4. trx2 執行 commit -> 發生髒讀問題
+
 	// 執行 trx1: 寫入一筆 log
 	tx1, err := infra1.RDB.Conn.Begin()
 	if err != nil {
