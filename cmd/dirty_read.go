@@ -11,18 +11,18 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-var dirtyWriteCmd = &cobra.Command{
-	Use:   "dirty_write",
+var dirtyReadCmd = &cobra.Command{
+	Use:   "dirty_read",
 	Short: "",
 	Long:  ``,
-	RunE:  RunDirtyWriteCmd,
+	RunE:  RunDirtyReadCmd,
 }
 
 func init() {
-	rootCmd.AddCommand(dirtyWriteCmd)
+	rootCmd.AddCommand(dirtyReadCmd)
 }
 
-func RunDirtyWriteCmd(cmd *cobra.Command, args []string) error {
+func RunDirtyReadCmd(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
 	infra1 := accessor.BuildAccessor()
