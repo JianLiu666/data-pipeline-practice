@@ -41,7 +41,7 @@ func RunDirtyReadCmd(cmd *cobra.Command, args []string) error {
 
 	_, err = tx1.Exec("INSERT INTO logs (deposit_user_id, withdraw_user_id, amount, created_at) VALUES (1, 2, 1, '2022-12-22 20:57:47');")
 	if err != nil {
-		logrus.Panicf("failed to start transaction: %v", err)
+		logrus.Panicf("failed to execute: %v", err)
 	}
 
 	// 在 trx1 結束前, 執行 trx2 取得相同 table 裡面的資料數量
@@ -52,14 +52,14 @@ func RunDirtyReadCmd(cmd *cobra.Command, args []string) error {
 	}
 	rows, err := tx2.Query("SELECT count(*) FROM logs;")
 	if err != nil {
-		logrus.Panicf("failed to start transaction: %v", err)
+		logrus.Panicf("failed to query: %v", err)
 	}
 
 	for rows.Next() {
 		s := 0
 		err = rows.Scan(&s)
 		if err != nil {
-			logrus.Panicf("failed to start transaction: %v", err)
+			logrus.Panicf("failed to scan rows: %v", err)
 		}
 		logrus.Warnf("Read Uncommitted: %v", s)
 	}
