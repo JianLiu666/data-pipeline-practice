@@ -53,3 +53,4 @@ DATA-PIPELINE-PRACTICE
 ### RDB Isolation Level
 
  - [[Blog] MySQL中如何为单个事务设置隔离级别](https://www.jianshu.com/p/b324b368a210)
+ - [[Blog] MySQL 交易功能 Transaction 整理](https://xyz.cinc.biz/2013/05/mysql-transaction.html)

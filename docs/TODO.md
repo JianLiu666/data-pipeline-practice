@@ -4,6 +4,7 @@
   - [Application](#application)
   - [Mechanisms](#mechanisms)
   - [Deployment](#deployment)
+  - [Relational Database Isolation Level](#relational-database-isolation-level)
 
 ---
 
@@ -23,7 +24,11 @@
 
 ## Deployment
 
-- [ ] Docker-compose configuration file
+- [x] Docker-compose configuration file
 - [x] Study relational database migration tool `flyway`
   - [x] Used `golang-migrate` cli tool
 - [ ] MySQL master & slave
+
+## Relational Database Isolation Level
+
+- [ ] 理解 MySQL gap lock & next-key lock
