@@ -23,7 +23,7 @@ func init() {
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		logrus.Panicln(os.Stderr, err)
+		logrus.Panicf("failed to execute cobra command: %v", err)
 		os.Exit(1)
 	}
 }

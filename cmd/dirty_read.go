@@ -65,10 +65,14 @@ func RunDirtyReadCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	// 結束 trx2
-	tx2.Commit()
+	if err := tx2.Commit(); err != nil {
+		logrus.Panicf("failed to commit transaction: %v", err)
+	}
 
 	// 結束 trx1
-	tx1.Rollback()
+	if err := tx1.Rollback(); err != nil {
+		logrus.Panicf("failed to rollback transaction: %v", err)
+	}
 
 	return nil
 }

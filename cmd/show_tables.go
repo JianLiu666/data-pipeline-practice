@@ -44,7 +44,11 @@ func RunShowTablesCmd(cmd *cobra.Command, args []string) error {
 		}
 
 		selectQuery, err := infra.RDB.Conn.Query(fmt.Sprintf("SELECT * FROM %s", tbName))
-		defer selectQuery.Close()
+		defer func() {
+			if err := selectQuery.Close(); err != nil {
+				logrus.Errorf("failed to close cursor: %v", err)
+			}
+		}()
 		if err != nil {
 			logrus.Errorf("executing qeury failed: %v", err)
 			continue

@@ -8,7 +8,7 @@ MYSQL_DATABASE ?= development
 MYSQL_PORT ?= 3306
 MYSQL_DSN ?= $(MYSQL_USER):$(MYSQL_PASSWORD)@tcp($(MYSQL_HOST):$(MYSQL_PORT))/$(MYSQL_DATABASE)
 
-.PHONY: help init setup-all shutdown-all migrate-up migrate-down show-tables gen-data concurrent-transfer dirty-read
+.PHONY: help init setup-all shutdown-all lint migrate-up migrate-down show-tables gen-data concurrent-transfer dirty-read
 
 help:
 	@echo "Usage make [commands]\n"
@@ -16,6 +16,7 @@ help:
 	@echo "  init  初始化建置環境 (docker volume, build image, etc.)"
 	@echo "  setup-all            透過 docker-compose 啟動所有服務 (主要系統, 壓力測試工具, 各項監控工具)"
 	@echo "  shutdown-all         關閉 docker-cpmpose 所有服務"
+	@echo "  lint                 "
 	@echo "  migrate-up           透過 golang-migrate 執行所有 up migrations"
 	@echo "  migrate-down         透過 golang-migrate 執行所有 down migrations"
 	@echo "  show-tables          "
@@ -39,6 +40,9 @@ setup-all:
 
 shutdown-all:
 	docker-compose -f deployments/00.infra.yaml down -v
+
+lint:
+	golangci-lint run
 
 migrate-up:
 	migrate -database 'mysql://$(MYSQL_DSN)?multiStatements=true' -source 'file://deployments/mysql/migration' -verbose up
