@@ -8,7 +8,7 @@ MYSQL_DATABASE ?= development
 MYSQL_PORT ?= 3306
 MYSQL_DSN ?= $(MYSQL_USER):$(MYSQL_PASSWORD)@tcp($(MYSQL_HOST):$(MYSQL_PORT))/$(MYSQL_DATABASE)
 
-.PHONY: help init setup-all shutdown-all lint migrate-up migrate-down show-tables gen-data concurrent-transfer dirty-read
+.PHONY: help init setup-all shutdown-all lint migrate-up migrate-down show-tables gen-data concurrent-transfer dirty-read read-skew
 
 help:
 	@echo "Usage make [commands]\n"
@@ -24,6 +24,7 @@ help:
 	@echo "  concurrent-transfer  "
 	@echo "  dirty-read           "
 	@echo "  non-repeatable-read  "
+	@echo "  read-skew            "
 
 init:
 	rm -rf deployments/data
@@ -65,3 +66,6 @@ dirty-read:
 
 non-repeatable-read:
 	go run main.go non_repeatable_read -f ./conf.d/env.yaml
+
+read-skew:
+	go run main.go read_skew -f ./conf.d/env.yaml

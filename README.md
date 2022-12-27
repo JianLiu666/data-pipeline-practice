@@ -54,3 +54,4 @@ DATA-PIPELINE-PRACTICE
 
  - [[Blog] MySQL中如何为单个事务设置隔离级别](https://www.jianshu.com/p/b324b368a210)
  - [[Blog] MySQL 交易功能 Transaction 整理](https://xyz.cinc.biz/2013/05/mysql-transaction.html)
+ - [[StackOverflow] "Read skew" vs "Non-repeatable read" (Transaction)](https://stackoverflow.com/questions/73917534/read-skew-vs-non-repeatable-read-transaction)
