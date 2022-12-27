@@ -34,7 +34,7 @@ func RunDirtyReadCmd(cmd *cobra.Command, args []string) error {
 	infra2.InitRDB(ctx)
 
 	// 模擬髒讀情境 (Dirty Read)
-	// trx2 的 isolation level 為 read uncommitted
+	// trx2 以 read uncommitted 的隔離等級執行
 	//
 	// 1. trx1 加入一筆新資料到 logs table, 但尚未 committed
 	// 2. trx2 此時向 logs table 讀取資料取回一筆資料 (發生 dirty read!)

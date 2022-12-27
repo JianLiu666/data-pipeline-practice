@@ -36,10 +36,12 @@ func RunNonRepeatableReadCmd(cmd *cobra.Command, args []string) error {
 	// business logic
 
 	// 模擬不可重複讀情境 (Non-repeatable Read)
+	// trx1 以 read committed 的隔離等級執行
+	//
 	// 1. trx1 讀取 wallets table id = 1 的錢包餘額 -> 100k
 	// 2. trx2 讀取 wallets table id = 1 的錢包餘額 -> 100k
 	// 3. some how, trx2 的執行速度比 trx1 還要快，扣除 60k 後並執行 commit
-	// 4. trx1 再次讀取 wallets table id = 1 的錢包餘額變成 40k，此時發生不可重複讀問題
+	// 4. trx1 再次讀取 wallets table id = 1 的錢包餘額變成 40k (發生 non-repeatable read!)
 	//
 	// 必須將 trx1 的隔離等級調整成 Repeatable Read 等級以上才能避免此問題
 
@@ -94,7 +96,7 @@ func RunNonRepeatableReadCmd(cmd *cobra.Command, args []string) error {
 
 		time.Sleep(1 * time.Second)
 
-		tx2, err := infra2.RDB.Conn.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelReadCommitted})
+		tx2, err := infra2.RDB.Conn.Begin()
 		if err != nil {
 			logrus.Panicf("failed to start transaction: %v", err)
 		}
