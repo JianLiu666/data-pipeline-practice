@@ -8,7 +8,7 @@ MYSQL_DATABASE ?= development
 MYSQL_PORT ?= 3306
 MYSQL_DSN ?= $(MYSQL_USER):$(MYSQL_PASSWORD)@tcp($(MYSQL_HOST):$(MYSQL_PORT))/$(MYSQL_DATABASE)
 
-.PHONY: help init setup-all shutdown-all lint migrate-up migrate-down show-tables gen-data concurrent-transfer dirty-read read-skew
+.PHONY: help init setup-all shutdown-all lint migrate-up migrate-down show-tables gen-data concurrent-transfer dirty-read read-skew lost-update
 
 help:
 	@echo "Usage make [commands]\n"
@@ -69,3 +69,6 @@ non-repeatable-read:
 
 read-skew:
 	go run main.go read_skew -f ./conf.d/env.yaml
+
+lost-update:
+	go run main.go lost_update -f ./conf.d/env.yaml
