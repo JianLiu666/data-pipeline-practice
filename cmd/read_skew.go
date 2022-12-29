@@ -37,6 +37,7 @@ func RunReadSkewCmd(cmd *cobra.Command, args []string) error {
 	// bussiness logic
 
 	// 模擬讀偏差情境 (Read Skew)
+	// trx1 以 read committed 的隔離等級執行
 	//
 	// 0. 對 wallets table id = 1 的錢包餘額扣款 40k 並新增紀錄至 logs table
 	// 1. trx1 讀取 wallets table id = 1 的錢包餘額 -> 60k
