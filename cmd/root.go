@@ -32,3 +32,9 @@ func initConfig() {
 	viper.SetConfigFile(cfgFile)
 	viper.AutomaticEnv()
 }
+
+func checkError(err error, msg string) {
+	if err != nil {
+		logrus.Panicln(msg, err)
+	}
+}
