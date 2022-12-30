@@ -36,7 +36,7 @@ func RunDirtyReadCmd(cmd *cobra.Command, args []string) error {
 	logrus.Info("========== start ==========")
 	defer logrus.Info("=========== end ===========")
 
-	// 模擬髒讀情境 (Dirty Read)
+	// 模擬髒讀(Dirty Read) 情境
 	//
 	//                            Transaction 1                                Database                              Transaction 2
 	//                                  |                                         |                                       |

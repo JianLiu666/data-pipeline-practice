@@ -44,7 +44,7 @@ func RunReadSkewCmd(cmd *cobra.Command, args []string) error {
 	logrus.Info("========== start ==========")
 	defer logrus.Info("=========== end ===========")
 
-	// 模擬讀偏差(Read Skew) 情境，又稱不可重複讀 (Non-repeatable Read)
+	// 模擬讀偏差(Read Skew) 情境，又稱不可重複讀(Non-repeatable Read)
 	//
 	//                    Transaction 1                                                   Database                                    Transaction 2
 	//                         |                                                             |                                             |

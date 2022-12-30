@@ -44,7 +44,7 @@ func RunLostUpdateCmd(cmd *cobra.Command, args []string) error {
 	logrus.Info("========== start ==========")
 	defer logrus.Info("=========== end ===========")
 
-	// 模擬更新丟失情境 (Lost Update)
+	// 模擬更新丟失(Lost Update) 情境
 	//
 	//                    Transaction 1                                          Database                                           Transaction 2
 	//                         |                                                    |                                                    |
