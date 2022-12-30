@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"practice/internal/accessor"
-	"sync"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -25,105 +24,100 @@ func init() {
 func RunLostUpdateCmd(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
-	infra1 := accessor.BuildAccessor()
-	defer infra1.Close(ctx)
-	infra1.InitRDB(ctx)
+	infra := accessor.BuildAccessor()
+	defer infra.Close(ctx)
+	infra.InitRDB(ctx)
 
-	infra2 := accessor.BuildAccessor()
-	defer infra2.Close(ctx)
-	infra2.InitRDB(ctx)
+	// init
+	_, err := infra.RDB.Conn.Exec("TRUNCATE TABLE wallets")
+	checkError(err, "failed to execute:")
+
+	timeNow := time.Now().Format("2006-01-02 15:04:05")
+	_, err = infra.RDB.Conn.Exec("INSERT INTO wallets (user_id, amount, created_at, modified_at) VALUES (?, ?, ?, ?);",
+		"1",
+		100000,
+		timeNow,
+		timeNow,
+	)
+	checkError(err, "failed to execute:")
+
+	logrus.Info("========== start ==========")
+	defer logrus.Info("=========== end ===========")
 
 	// 模擬更新丟失情境 (Lost Update)
 	//
-	// 1. trx1 更新 users table id = 1 的 nickname 成 trx1
-	// 2. trx2 更新 users table id = 1 的 nickname 成 trx2, 此時會先阻塞直到 trx1 commit 為止
-	// 3. trx1 commit
-	// 4. trx2 commit
-	// 5. 讀取 users table id = 1 的資料發現 nickname 為 trx2 (發生 lost update!)
+	//                    Transaction 1                                          Database                                           Transaction 2
+	//                         |                                                    |                                                    |
+	//                         |                                                    |   wallets                                          |
+	//                         |                                                    |  +----+--------+-----+                             |
+	//                         |                                                    |  | id | amount | ... |                             |
+	//                         |                                                    |  +----+--------+-----+                             |
+	//                         |                                                    |  | 1  | 100000 | ... |                             |
+	//                         |                                                    |  +----+--------+-----+                             |
+	//                         |                                                    |                                                    |
+	//                         |                                                    |                                START TRANSACTION   |
+	//                         |                                                    | <------------------------------------------------- |
+	//                         |   START TRANSACTION                                |                                                    |
+	//                         | -------------------------------------------------> |                                                    |   wallets
+	//                         |                                                    |          SELECT amount FROM wallets WHERE id = 1   |  +----+--------+-----+
+	//   wallets               |                                                    | <------------------------------------------------- |  | id | amount | ... |
+	//  +----+--------+-----+  |   SELECT amount FROM wallets WHERE id = 1          |                                                    |  +----+--------+-----+
+	//  | id | amount | ... |  | -------------------------------------------------> |                                                    |  | 1  | 100000 | ... |
+	//  +----+--------+-----+  |                                                    |                                                    |  +----+--------+-----+
+	//  | 1  | 100000 | ... |  |                                                    |                                                    |
+	//  +----+--------+-----+  |                                                    |                                                    |
+	//                         |                                                    |                                                    |   wallets
+	//                         |                                                    |   UPDATE wallets SET amount = 60000 WHERE id = 1   |  +----+--------+-----+
+	//                         |                                                    | <------------------------------------------------- |  | id | amount | ... |
+	//                         |                                                    |                                           COMMIT   |  +----+--------+-----+
+	//   wallets               |                                                    | <------------------------------------------------- |  | 1  |  60000 | ... |
+	//  +----+--------+-----+  |   UPDATE wallets SET amount = 40000 WHERE id = 1   |                                                    |  +----+--------+-----+
+	//  | id | amount | ... |  | -------------------------------------------------> |                                                    |
+	//  +----+--------+-----+  |   COMMIT                                           |                                                    |  transaction2 的更新結果最後被 transaction1 覆蓋掉
+	//  | 1  |  40000 | ... |  | -------------------------------------------------> |                                                    |  造成 lost update
+	//  +----+--------+-----+  |                                                    |                                                    |
+	//                         |                                                    |                                                    |
 	//
-	// 該情境的解決方式只能透過樂觀鎖的方式解決
-	// e.g.
-	//   加入新的 column 'version' 來當作查詢條件
-	//   SELET version FROM users WHERE id = 1 (version = 0)
-	//   UPDATE users SET nickname = 'trx1', version = version + 1 WHERE id = 1 AND version = 0
+	// 兩種解決 Lost Update 的辦法:
 	//
-	// 如果是 number 類型的欄位可以透過 DB 的原子性操作保護
-	// e.g.
-	//   UPDATE wallets SET amount = amount + 1 WHERE user_id = 1
+	// 1. 交給 Database 的 atomic write
+	//     - 改寫 UPDATE wallets SET amount = {value} WHERE id = 1 成 UPDATE wallets SET amount = amount - {value} WHERE id = 1
+	//     - 要特別注意 transaction failed 時的重試流程，若未能保證冪等性可能造成重複扣款問題
+	//
+	// 2. 自行實現樂觀鎖流程 (CAS)
+	//     - 改寫 UPDATE walltes SET amount = {value} WHERE id = 1 成 UPDATE wallets SET amount = {new} WHERE id = 1 AND amount = {old}
+	//     - 強制 transaction 1 更新失敗, 但要自行驗證 transaction 執行結果是否符合預期
 
-	wg := new(sync.WaitGroup)
-	wg.Add(2)
+	tx2, err := infra.RDB.Conn.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelRepeatableRead})
+	checkError(err, "failed to start transaction:")
 
-	go func(_wg *sync.WaitGroup) {
-		defer _wg.Done()
+	tx1, err := infra.RDB.Conn.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelRepeatableRead})
+	checkError(err, "failed to start transaction:")
 
-		logrus.Infoln("trx1 start.")
+	var amount_tx1, amount_tx2, amount_result int
 
-		tx1, err := infra1.RDB.Conn.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelRepeatableRead})
-		if err != nil {
-			logrus.Panicf("failed to start transaction: %v", err)
-		}
+	err = tx2.QueryRow("SELECT amount FROM wallets WHERE id = 1").Scan(&amount_tx2)
+	checkError(err, "failed to querying row:")
 
-		_, err = tx1.Exec("UPDATE users SET nickname = 'trx1' WHERE id = 1")
-		if err != nil {
-			logrus.Panicf("failed to execute: %v", err)
-		}
+	err = tx1.QueryRow("SELECT amount FROM wallets WHERE id = 1").Scan(&amount_tx1)
+	checkError(err, "failed to querying row:")
 
-		logrus.Infoln("trx1 update nickname to 'trx1'")
-		time.Sleep(6 * time.Second)
+	_, err = tx2.Exec("UPDATE wallets SET amount = 60000 WHERE id = 1")
+	checkError(err, "failed to execute:")
 
-		err = tx1.Commit()
-		if err != nil {
-			logrus.Panicf("failed to commit transaction: %v", err)
-		}
+	err = tx2.Commit()
+	checkError(err, "failed to commit:")
 
-		logrus.Infoln("trx1 committed.")
+	_, err = tx1.Exec("UPDATE wallets SET amount = 40000 WHERE id = 1")
+	checkError(err, "failed to execute:")
 
-	}(wg)
+	err = tx1.Commit()
+	checkError(err, "failed to commit:")
 
-	go func(_wg *sync.WaitGroup) {
-		defer _wg.Done()
+	err = infra.RDB.Conn.QueryRow("SELECT amount FROM wallets WHERE id = 1").Scan(&amount_result)
+	checkError(err, "failed to querying row:")
 
-		time.Sleep(1 * time.Second)
-		logrus.Infoln("trx2 start.")
-
-		tx2, err := infra2.RDB.Conn.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelRepeatableRead})
-		if err != nil {
-			logrus.Panicf("failed to start transaction: %v", err)
-		}
-
-		_, err = tx2.Exec("UPDATE users SET nickname = 'trx2' WHERE id = 1")
-		if err != nil {
-			logrus.Panicf("failed to execute: %v", err)
-		}
-
-		logrus.Infoln("trx2 update nickname to 'trx2'")
-
-		err = tx2.Commit()
-		if err != nil {
-			logrus.Panicf("failed to commit transaction: %v", err)
-		}
-
-		logrus.Infoln("trx2 committed.")
-
-	}(wg)
-
-	wg.Wait()
-
-	rows, err := infra1.RDB.Conn.Query("SELECT nickname FROM users WHERE id = 1;")
-	if err != nil {
-		logrus.Panicf("failed to qeury: %v", err)
-	}
-
-	var nickname string
-	for rows.Next() {
-		err = rows.Scan(&nickname)
-		if err != nil {
-			logrus.Panicf("failed to scan rows: %v", err)
-		}
-	}
-
-	logrus.Infof("nickname = %v", nickname)
+	logrus.Warnf("Amount = %v", amount_result)
 
 	return nil
 }
