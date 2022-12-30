@@ -64,9 +64,6 @@ concurrent-transfer:
 dirty-read:
 	go run main.go dirty_read -f ./conf.d/env.yaml
 
-non-repeatable-read:
-	go run main.go non_repeatable_read -f ./conf.d/env.yaml
-
 read-skew:
 	go run main.go read_skew -f ./conf.d/env.yaml
 
