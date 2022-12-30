@@ -29,40 +29,31 @@ func RunShowTablesCmd(cmd *cobra.Command, args []string) error {
 
 	infra.InitRDB(ctx)
 
+	logrus.Info("========== start ==========")
+	defer logrus.Info("=========== end ===========")
+
 	// bussiness logic
 	showTablesQuery, err := infra.RDB.Conn.Query("SHOW TABLES")
-	if err != nil {
-		logrus.Panicf("failed to execute sql task: %v", err)
-	}
+	checkError(err, "failed to query:")
 
 	for showTablesQuery.Next() {
 		var tbName string
 
-		if err := showTablesQuery.Scan(&tbName); err != nil {
-			logrus.Errorf("querying tables failed: %v", err)
-			continue
-		}
+		err = showTablesQuery.Scan(&tbName)
+		checkError(err, "querying table failed:")
 
 		selectQuery, err := infra.RDB.Conn.Query(fmt.Sprintf("SELECT * FROM %s", tbName))
 		defer func() {
-			if err := selectQuery.Close(); err != nil {
-				logrus.Errorf("failed to close cursor: %v", err)
-			}
+			err = selectQuery.Close()
+			checkError(err, "failed to close cursor:")
 		}()
-		if err != nil {
-			logrus.Errorf("executing qeury failed: %v", err)
-			continue
-		}
+		checkError(err, "executing query failed:")
 
 		columns, err := selectQuery.Columns()
-		if err != nil {
-			logrus.Errorf("failed to get columns from table %v: %v", tbName, err)
-			continue
-		}
+		checkError(err, fmt.Sprintf("failed to get columns from table %v", tbName))
 
 		logrus.Infof("table name: %s -- columns: %v", tbName, strings.Join(columns, ", "))
 	}
 
-	logrus.Info("done")
 	return nil
 }

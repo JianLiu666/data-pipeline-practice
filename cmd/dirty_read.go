@@ -33,6 +33,9 @@ func RunDirtyReadCmd(cmd *cobra.Command, args []string) error {
 	_, err := infra.RDB.Conn.Exec("TRUNCATE TABLE logs")
 	checkError(err, "failed to execute:")
 
+	logrus.Info("========== start ==========")
+	defer logrus.Info("=========== end ===========")
+
 	// 模擬髒讀情境 (Dirty Read)
 	// trx2 以 read uncommitted 的隔離等級執行
 	//
