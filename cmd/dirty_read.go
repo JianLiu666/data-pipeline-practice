@@ -40,21 +40,20 @@ func RunDirtyReadCmd(cmd *cobra.Command, args []string) error {
 	//
 	//                            Transaction 1                                Database                              Transaction 2
 	//                                  |                                         |                                       |
-	//                                  |                                         |  +----------------------------+       |
-	//                                  |                                         |  |           logs             |       |
+	//                                  |                                         |   logs                                |
 	//                                  |                                         |  +----+-----------------+-----+       |
 	//                                  |                                         |  | id | deposit_user_id | ... |       |
-	//  +----------------------------+  |                                         |  +----+-----------------+-----+       |
-	//  |           logs             |  |   START TRANSACTION                     |                                       |
+	//                                  |                                         |  +----+-----------------+-----+       |
+	//   logs                           |   START TRANSACTION                     |                                       |
 	//  +----+-----------------+-----+  | --------------------------------------> |                                       |
 	//  | id | deposit_user_id | ... |  |   INSERT INTO logs (...) VALUES (...)   |                                       |
 	//  +----+-----------------+-----+  | --------------------------------------> |                                       |
 	//  | 1  | 1               | ... |  |                                         |                   START TRANSACTION   |
 	//  +----+-----------------+-----+  |                                         | <------------------------------------ |
-	//                                  |                                         |           SELECT count(*) FROM logs   | -> ioslation level 為 read uncommitted 時會讀到
-	//                                  |                                         | <------------------------------------ |    transaction 1 尚未 committed 的資料導致 dirty read
-	//                                  |   ROLLBACK                              |                                       |
-	//                                  | --------------------------------------> |                                       |    必須是 read committed 以上的等級才可避免
+	//                                  |                                         |           SELECT count(*) FROM logs   |  ioslation level 為 read uncommitted 時會讀到
+	//                                  |                                         | <------------------------------------ |  transaction 1 尚未 committed 的資料導致 dirty read
+	//                                  |   ROLLBACK                              |                                       |  必須是 read committed 以上的等級才可避免
+	//                                  | --------------------------------------> |                                       |
 	//                                  |                                         |                              COMMIT   |
 	//                                  |                                         | <------------------------------------ |
 	//                                  |                                         |                                       |
