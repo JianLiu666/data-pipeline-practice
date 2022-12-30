@@ -37,14 +37,27 @@ func RunDirtyReadCmd(cmd *cobra.Command, args []string) error {
 	defer logrus.Info("=========== end ===========")
 
 	// 模擬髒讀情境 (Dirty Read)
-	// trx2 以 read uncommitted 的隔離等級執行
 	//
-	// 1. trx1 加入一筆新資料到 logs table, 但尚未 committed
-	// 2. trx2 此時向 logs table 讀取資料取回一筆資料 (發生 dirty read!)
-	// 3. trx1 執行 rollback
-	// 4. trx2 執行 commit
-	//
-	// 必須將 trx2 的隔離等級調整成 Read Committed 等級以上才能必免此問題
+	//                            Transaction 1                                Database                              Transaction 2
+	//                                  |                                         |                                       |
+	//                                  |                                         |  +----------------------------+       |
+	//                                  |                                         |  |           logs             |       |
+	//                                  |                                         |  +----+-----------------+-----+       |
+	//                                  |                                         |  | id | deposit_user_id | ... |       |
+	//  +----------------------------+  |                                         |  +----+-----------------+-----+       |
+	//  |           logs             |  |   START TRANSACTION                     |                                       |
+	//  +----+-----------------+-----+  | --------------------------------------> |                                       |
+	//  | id | deposit_user_id | ... |  |   INSERT INTO logs (...) VALUES (...)   |                                       |
+	//  +----+-----------------+-----+  | --------------------------------------> |                                       |
+	//  | 1  | 1               | ... |  |                                         |                   START TRANSACTION   |
+	//  +----+-----------------+-----+  |                                         | <------------------------------------ |
+	//                                  |                                         |           SELECT count(*) FROM logs   | -> ioslation level 為 read uncommitted 時會讀到
+	//                                  |                                         | <------------------------------------ |    transaction 1 尚未 committed 的資料導致 dirty read
+	//                                  |   ROLLBACK                              |                                       |
+	//                                  | --------------------------------------> |                                       |    必須是 read committed 以上的等級才可避免
+	//                                  |                                         |                              COMMIT   |
+	//                                  |                                         | <------------------------------------ |
+	//                                  |                                         |                                       |
 
 	// 執行 trx1: 寫入一筆 log
 	tx1, err := infra.RDB.Conn.Begin()
