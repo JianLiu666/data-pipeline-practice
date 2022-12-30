@@ -69,3 +69,9 @@ read-skew:
 
 lost-update:
 	go run main.go lost_update -f ./conf.d/env.yaml
+
+write-skew-1:
+	go run main.go write_skew_1 -f ./conf.d/env.yaml
+
+write-skew-2:
+	go run main.go write_skew_2 -f ./conf.d/env.yaml
