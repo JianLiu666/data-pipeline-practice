@@ -102,13 +102,17 @@ func RunLostUpdateCmd(cmd *cobra.Command, args []string) error {
 	err = tx1.QueryRow("SELECT amount FROM wallets WHERE id = 1").Scan(&amount_tx1)
 	checkError(err, "failed to querying row:")
 
-	_, err = tx2.Exec("UPDATE wallets SET amount = 60000 WHERE id = 1")
+	// 表示業務邏輯處理結果
+	amount_tx2 = 60000
+	_, err = tx2.Exec("UPDATE wallets SET amount = ? WHERE id = 1", amount_tx2)
 	checkError(err, "failed to execute:")
 
 	err = tx2.Commit()
 	checkError(err, "failed to commit:")
 
-	_, err = tx1.Exec("UPDATE wallets SET amount = 40000 WHERE id = 1")
+	// 表示業務邏輯處理結果
+	amount_tx1 = 40000
+	_, err = tx1.Exec("UPDATE wallets SET amount = ? WHERE id = 1", amount_tx1)
 	checkError(err, "failed to execute:")
 
 	err = tx1.Commit()
