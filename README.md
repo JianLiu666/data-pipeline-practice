@@ -57,3 +57,6 @@ DATA-PIPELINE-PRACTICE
  - [[StackOverflow] "Read skew" vs "Non-repeatable read" (Transaction)](https://stackoverflow.com/questions/73917534/read-skew-vs-non-repeatable-read-transaction)
  - [[Blog] 複習資料庫的 Isolation Level 與圖解五個常見的 Race Conditions](https://medium.com/@chester.yw.chu/%E8%A4%87%E7%BF%92%E8%B3%87%E6%96%99%E5%BA%AB%E7%9A%84-isolation-level-%E8%88%87%E5%B8%B8%E8%A6%8B%E7%9A%84%E4%BA%94%E5%80%8B-race-conditions-%E5%9C%96%E8%A7%A3-16e8d472a25c)
  - [[Blog] 對於 MySQL Repeatable Read Isolation 常見的三個誤解](https://medium.com/@chester.yw.chu/%E5%B0%8D%E6%96%BC-mysql-repeatable-read-isolation-%E5%B8%B8%E8%A6%8B%E7%9A%84%E4%B8%89%E5%80%8B%E8%AA%A4%E8%A7%A3-7a9afbac65af)
+ - [[Blog] MySQL-两类更新丢失及解决办法](https://blog.csdn.net/weixin_44793021/article/details/125107154)
+ - [[Blog] MySQL🐬 InnoDB 教我的事：想鎖的沒鎖 ？不該鎖的被鎖了！](https://medium.com/%E7%A8%8B%E5%BC%8F%E7%8C%BF%E5%90%83%E9%A6%99%E8%95%89/mysql-innodb-%E6%95%99%E6%88%91%E7%9A%84%E4%BA%8B-%E6%83%B3%E9%8E%96%E7%9A%84%E6%B2%92%E9%8E%96-%E4%B8%8D%E8%A9%B2%E9%8E%96%E7%9A%84%E8%A2%AB%E9%8E%96%E4%BA%86-ac723fe167fe)
+ - [[Blog] 在数据库中不可重复读和幻读到底应该怎么分？](https://www.zhihu.com/question/392569386)
