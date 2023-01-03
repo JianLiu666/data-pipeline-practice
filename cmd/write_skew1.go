@@ -47,48 +47,46 @@ func RunWriteSkew1Cmd(cmd *cobra.Command, args []string) error {
 
 	// 模擬因為幻讀(Phantom Read) 造成寫偏差(Write Skew) 情境
 	//
-	//                    Transaction 1                                                   Database                                                    Transaction 2
-	//                         |                                                             |                                                             |
-	//                         |                                                             |   wallets                                                   |
-	//                         |                                                             |  +----+--------+-----+                                      |
-	//                         |                                                             |  | id | amount | ... |                                      |
-	//                         |                                                             |  +----+--------+-----+                                      |
-	//                         |                                                             |  | 1  | 100000 | ... |                                      |
-	//                         |                                                             |  +----+--------+-----+                                      |
-	//                         |                                                             |                                                             |
-	//                         |   START TRANSACTION                                         |                                                             |
-	//                         | ----------------------------------------------------------> |                                                             |
-	//                         |                                                             |                                         START TRANSACTION   |
-	//   wallets               |                                                             | <---------------------------------------------------------- |
-	//  +----+--------+-----+  |   SELECT amount FROM wallets WHERE id = 1                   |                                                             |
-	//  | id | amount | ... |  | ----------------------------------------------------------> |                                                             |   wallets
-	//  +----+--------+-----+  |                                                             |                   SELECT amount FROM wallets WHERE id = 1   |  +----+--------+-----+
-	//  | 1  | 100000 | ... |  |                                                             | <---------------------------------------------------------- |  | id | amount | ... |
-	//  +----+--------+-----+  |       does the amount more than 60000? Yes!                 |                                                             |  +----+--------+-----+
-	//                         |                                                             |                                                             |  | 1  | 100000 | ... |
-	//   wallets               |                                                             |       does the amount more than 60000? Yes!                 |  +----+--------+-----+
-	//  +----+--------+-----+  |   UPDATE wallets SET amount = amount - 60000 WHERE id = 1   |                                                             |
-	//  | id | amount | ... |  | ----------------------------------------------------------> |                                                             |
-	//  +----+--------+-----+  |   COMMIT                                                    |                                                             |
-	//  | 1  |  40000 | ... |  | ----------------------------------------------------------> |                                                             |   wallets
-	//  +----+--------+-----+  |                                                             |   UPDATE wallets SET amount = amount - 60000 WHERE id = 1   |  +----+--------+-----+
-	//                         |                                                             | <---------------------------------------------------------- |  | id | amount | ... |
-	//                         |                                                             |                                           COMMIT            |  +----+--------+-----+
-	//                         |                                                             | <---------------------------------------------------------- |  | 1  | -20000 | ... |
-	//                         |                                                             |                                                             |  +----+--------+-----+
-	//                         |                                                             |                                                             |
-	//                         |                                                             |                                                             | 因為業務邏輯造成 phantom read (讀到錯誤的錢包餘額)
-	//                         |                                                             |                                                             | 導致後續發生 write skew (額度不足導致餘額為負數)
 	//
-	// 兩種解決 Write Skew 的辦法:
+	//                    Transaction 1                                  Database                                       Transaction 2
+	//                         |                                            |                                                |
+	//                         |                                            |   wallets                                      |
+	//                         |                                            |  +----+--------+-----+                         |
+	//                         |                                            |  | id | amount | ... |                         |
+	//                         |                                            |  +----+--------+-----+                         |
+	//                         |                                            |  | 1  | 100000 | ... |                         |
+	//                         |                                            |  +----+--------+-----+                         |
+	//                         |                                            |                                                |
+	//                         |                                            |                            START TRANSACTION   |
+	//                         |                                            | <--------------------------------------------- |   wallets
+	//                         |                                            |                   SELECT amount FROM wallets   |  +----+--------+-----+
+	//                         |                                            | <--------------------------------------------- |  | id | amount | ... |
+	//                         |   START TRANSACTION                        |                                                |  +----+--------+-----+
+	//   wallets               | -----------------------------------------> |                                                |  | 1  | 100000 | ... |
+	//  +----+--------+-----+  |   INSERT INTO wallets (...) VALUES (...)   |                                                |  +----+--------+-----+
+	//  | id | amount | ... |  | -----------------------------------------> |                                                |
+	//  +----+--------+-----+  |   COMMIT                                   |                                                |
+	//  | 1  | 100000 | ... |  | -----------------------------------------> |                                                |   wallets
+	//  +----+--------+-----+  |                                            |                   SELECT amount FROM wallets   |  +----+--------+-----+
+	//  | 2  | 100000 | ... |  |                                            | <--------------------------------------------- |  | id | amount | ... |
+	//  +----+--------+-----+  |                                            |                                                |  +----+--------+-----+
+	//                         |                                            |                                                |  | 1  | 100000 | ... |
+	//                         |                                            |                                                |  +----+--------+-----+
+	//                         |                                            |                                                |
+	//                         |                                            |                                                |
+	//                         |                                            |                                                |   wallets
+	//                         |                                            |   UPDATE wallets SET amount = amount + 10000   |  +----+--------+-----+
+	//                         |                                            | <--------------------------------------------- |  | id | amount | ... |
+	//                         |                                            |                                       COMMIT   |  +----+--------+-----+
+	//                         |                                            | <--------------------------------------------- |  | 1  | 110000 | ... |
+	//                         |                                            |                                                |  +----+--------+-----+
+	//                         |                                            |                                                |  | 2  | 110000 | ... |
+	//                         |                                            |                                                |  +----+--------+-----+
+	//                         |                                            |                                                |
+	//                         |                                            |                                                | 發生 write skew 導致更新到未讀取過的資料
+	//                         |                                            |                                                | 不一定所有的 repeatable read 等級都能阻止!
 	//
-	// 1. 自行加上 Explicit Lock
-	//     - 改寫 SELECT amount FROM wallets WHERE id = 1 成 SELECT amount FROM wallets WHERE id = 1 FOR UPDATE
-	//     - 加上排他鎖明確限制同時間只允許一個 transation 進行後續流程
-	//     - 注意 Row Lock 升級成 Netx-key Lock 可能造成的衍生問題
-	//
-	// 2. 將 isolation level 升級成 serializable level
-	//     - 在上述情境中還是無法避免同時 SELECT 後因為業務邏輯產生的 Phantom Read 問題
+	// 上述情境可以直接透過調整 isolation level 至 serializable level 解決 Write Skew 問題
 
 	wg := new(sync.WaitGroup)
 	wg.Add(2)
@@ -96,27 +94,32 @@ func RunWriteSkew1Cmd(cmd *cobra.Command, args []string) error {
 	go func(_wg *sync.WaitGroup) {
 		defer _wg.Done()
 
-		tx1, err := infra.RDB.Conn.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+		tx2, err := infra.RDB.Conn.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelRepeatableRead})
 		checkError(err, "failed to start transaction:")
-		logrus.Infoln("trnsaction 1 started.")
+		logrus.Infoln("trnsaction 2 started.")
 
-		var amount int
-		err = tx1.QueryRow("SELECT amount FROM wallets WHERE id = 1").Scan(&amount)
+		var count int
+		err = tx2.QueryRow("SELECT COUNT(amount) FROM wallets").Scan(&count)
 		checkError(err, "failed to querying row:")
-		logrus.Infoln("trnsaction 1 selected.")
+		logrus.Infof("trnsaction 2 selected, count = %v", count)
 
 		time.Sleep(1 * time.Second)
 
-		// 表示業務邏輯處理結果
-		if amount > 60000 {
-			_, err = tx1.Exec("UPDATE wallets SET amount = amount - 60000 WHERE id = 1")
-			checkError(err, "failed to execute:")
-			logrus.Infoln("trnsaction 1 updated.")
-		}
+		err = tx2.QueryRow("SELECT COUNT(amount) FROM wallets").Scan(&count)
+		checkError(err, "failed to querying row:")
+		logrus.Infof("trnsaction 2 selected, count = %v", count)
 
-		err = tx1.Commit()
+		_, err = tx2.Exec("UPDATE wallets SET amount = amount + 10000")
+		checkError(err, "failed to execute:")
+		logrus.Infoln("trnsaction 2 updated")
+
+		// err = tx2.QueryRow("SELECT COUNT(amount) FROM wallets").Scan(&count)
+		// checkError(err, "failed to querying row:")
+		// logrus.Warnf("trnsaction 2 selected, count = %v", count)
+
+		err = tx2.Commit()
 		checkError(err, "failed to commit:")
-		logrus.Infoln("trnsaction 1 committed.")
+		logrus.Infoln("trnsaction 2 committed.")
 
 	}(wg)
 
@@ -125,37 +128,32 @@ func RunWriteSkew1Cmd(cmd *cobra.Command, args []string) error {
 	go func(_wg *sync.WaitGroup) {
 		defer _wg.Done()
 
-		tx2, err := infra.RDB.Conn.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+		tx1, err := infra.RDB.Conn.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelRepeatableRead})
 		checkError(err, "failed to start transaction:")
-		logrus.Infoln("trnsaction 2 started.")
+		logrus.Infoln("trnsaction 1 started.")
 
-		var amount int
-		err = tx2.QueryRow("SELECT amount FROM wallets WHERE id = 1").Scan(&amount)
-		checkError(err, "failed to querying row:")
-		logrus.Infoln("trnsaction 2 selected.")
+		timeNow := time.Now().Format("2006-01-02 15:04:05")
+		_, err = tx1.Exec("INSERT INTO wallets (user_id, amount, created_at, modified_at) VALUES (?, ?, ?, ?);",
+			"2",
+			100000,
+			timeNow,
+			timeNow,
+		)
+		checkError(err, "failed to execute:")
+		logrus.Infoln("trnsaction 1 inserted.")
 
-		time.Sleep(1 * time.Second)
-
-		// 表示業務邏輯處理結果
-		if amount > 60000 {
-			_, err = tx2.Exec("UPDATE wallets SET amount = amount - 60000 WHERE id = 1")
-			checkError(err, "failed to execute:")
-			logrus.Infoln("trnsaction 2 updated.")
-		}
-
-		err = tx2.Commit()
+		err = tx1.Commit()
 		checkError(err, "failed to commit:")
-		logrus.Infoln("trnsaction 2 committed.")
+		logrus.Infoln("trnsaction 1 committed.")
 
 	}(wg)
 
 	wg.Wait()
 
-	var amount int
-	err = infra.RDB.Conn.QueryRow("SELECT amount FROM wallets WHERE id = 1").Scan(&amount)
+	var count int
+	err = infra.RDB.Conn.QueryRow("SELECT COUNT(amount) FROM wallets WHERE amount >= 110000").Scan(&count)
 	checkError(err, "failed to querying row:")
-
-	logrus.Warnf("Amount = %v", amount)
+	logrus.Warnf("SELECT COUNT(amount) FROM wallets WHERE amount >= 110000 is %v", count)
 
 	return nil
 }
