@@ -47,7 +47,6 @@ func RunWriteSkew1Cmd(cmd *cobra.Command, args []string) error {
 
 	// 模擬因為幻讀(Phantom Read) 造成寫偏差(Write Skew) 情境
 	//
-	//
 	//                    Transaction 1                                  Database                                       Transaction 2
 	//                         |                                            |                                                |
 	//                         |                                            |   wallets                                      |
