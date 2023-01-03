@@ -8,7 +8,7 @@ MYSQL_DATABASE ?= development
 MYSQL_PORT ?= 3306
 MYSQL_DSN ?= $(MYSQL_USER):$(MYSQL_PASSWORD)@tcp($(MYSQL_HOST):$(MYSQL_PORT))/$(MYSQL_DATABASE)
 
-.PHONY: help init setup-all shutdown-all lint migrate-up migrate-down show-tables gen-data concurrent-transfer dirty-read read-skew lost-update
+.PHONY: help init setup-all shutdown-all lint migrate-up migrate-down show-tables gen-data concurrent-transfer dirty-read read-skew lost-update write-skew-1 write-skew-2 lock-failed-1
 
 help:
 	@echo "Usage make [commands]\n"
@@ -23,8 +23,11 @@ help:
 	@echo "  gen-data             "
 	@echo "  concurrent-transfer  "
 	@echo "  dirty-read           "
-	@echo "  non-repeatable-read  "
 	@echo "  read-skew            "
+	@echo "  lost-update          "
+	@echo "  write-skew-1         "
+	@echo "  write-skew-2         "
+	@echo "  lock-failed-1        "
 
 init:
 	rm -rf deployments/data
@@ -75,3 +78,6 @@ write-skew-1:
 
 write-skew-2:
 	go run main.go write_skew_2 -f ./conf.d/env.yaml
+
+lock-failed-1:
+	go run main.go lock_failed_1 -f ./conf.d/env.yaml
