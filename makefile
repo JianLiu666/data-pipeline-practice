@@ -8,7 +8,7 @@ MYSQL_DATABASE ?= development
 MYSQL_PORT ?= 3306
 MYSQL_DSN ?= $(MYSQL_USER):$(MYSQL_PASSWORD)@tcp($(MYSQL_HOST):$(MYSQL_PORT))/$(MYSQL_DATABASE)
 
-.PHONY: help init setup-all shutdown-all lint migrate-up migrate-down show-tables gen-data concurrent-transfer dirty-read read-skew lost-update write-skew-1 write-skew-2 lock-failed-1
+.PHONY: help init setup-all shutdown-all lint migrate-up migrate-down show-tables gen-data dirty-read read-skew lost-update write-skew-1 write-skew-2 lock-failed-1
 
 help:
 	@echo "Usage make [commands]\n"
@@ -16,18 +16,17 @@ help:
 	@echo "  init  初始化建置環境 (docker volume, build image, etc.)"
 	@echo "  setup-all            透過 docker-compose 啟動所有服務 (主要系統, 壓力測試工具, 各項監控工具)"
 	@echo "  shutdown-all         關閉 docker-cpmpose 所有服務"
-	@echo "  lint                 "
+	@echo "  lint                 執行 Go Linter (golangci-lint)"
 	@echo "  migrate-up           透過 golang-migrate 執行所有 up migrations"
 	@echo "  migrate-down         透過 golang-migrate 執行所有 down migrations"
 	@echo "  show-tables          "
 	@echo "  gen-data             "
-	@echo "  concurrent-transfer  "
-	@echo "  dirty-read           "
-	@echo "  read-skew            "
-	@echo "  lost-update          "
-	@echo "  write-skew-1         "
-	@echo "  write-skew-2         "
-	@echo "  lock-failed-1        "
+	@echo "  dirty-read           模擬 Transaction 中的 Dirty Read 情境與解決辦法"
+	@echo "  read-skew            模擬 Transaction 中的 Read Skew 情境與解決辦法"
+	@echo "  lost-update          模擬 Transaction 中的 Lost Update 情境與解決辦法"
+	@echo "  write-skew-1         模擬 Transaction 中的第一種 Write Skew 情境與解決辦法"
+	@echo "  write-skew-2         模擬 Transaction 中的第二種 Write Skew 情境與解決辦法"
+	@echo "  lock-failed-1        模擬 Transaction 中因為命中不同索引導致上鎖失敗的情境與解決辦法"
 
 init:
 	rm -rf deployments/data
@@ -60,9 +59,6 @@ show-tables:
 
 gen-data:
 	go run main.go generate_data -f ./conf.d/env.yaml
-
-concurrent-transfer:
-	go run main.go concurrent_transfer -f ./conf.d/env.yaml
 
 dirty-read:
 	go run main.go dirty_read -f ./conf.d/env.yaml
