@@ -12,12 +12,35 @@ services:
       MYSQL_ROOT_PASSWORD: "0"
       MYSQL_DATABASE: "development"
     volumes:
-      - ./mysql/init:/docker-entrypoint-initdb.d
+      - ./rdb/mysql/init:/docker-entrypoint-initdb.d
+      - ./rdb/mysql/conf:/etc/mysql/conf.d
       - ./data/mysql:/var/lib/mysql
-      - ./mysql/conf:/etc/mysql/conf.d
       - /etc/timezone:/etc/timezone
       - /etc/localtime:/etc/localtime
     networks: 
+      - network-data-pipeline
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 4G
+        reservations:
+          memory: 2G
+
+  postgres:
+    image: postgres:12.4-alpine
+    container_name: "data-pipeline-00-postgres"
+    restart: always
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: development
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data/pgdata
+    networks:
       - network-data-pipeline
     deploy:
       resources:

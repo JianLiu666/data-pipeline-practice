@@ -4,9 +4,16 @@ BUILD_TIME ?= ${shell date +'%Y-%m-%d_%T'}
 MYSQL_USER ?= root
 MYSQL_PASSWORD ?= 0
 MYSQL_HOST ?= localhost
-MYSQL_DATABASE ?= development
 MYSQL_PORT ?= 3306
+MYSQL_DATABASE ?= development
 MYSQL_DSN ?= $(MYSQL_USER):$(MYSQL_PASSWORD)@tcp($(MYSQL_HOST):$(MYSQL_PORT))/$(MYSQL_DATABASE)
+
+POSTGRES_USER ?= user
+POSTGRES_PASSWORD ?= password
+POSTGRES_HOST ?= localhost
+POSTGRES_PORT ?= 5432
+POSTGRES_DATABASE ?= development
+POSTGRES_DSN ?= $(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(POSTGRES_HOST):$(POSTGRES_PORT)/$(POSTGRES_DATABASE)
 
 .PHONY: help init setup-all shutdown-all lint migrate-up migrate-down show-tables gen-data dirty-read read-skew lost-update write-skew-1 write-skew-2 lock-failed-1
 
@@ -31,6 +38,7 @@ help:
 init:
 	rm -rf deployments/data
 	mkdir -p deployments/data/mysql
+	mkdir -p deployments/data/postgres
 
 	go mod download
 	go mod tidy
@@ -50,9 +58,11 @@ lint:
 
 migrate-up:
 	migrate -database 'mysql://$(MYSQL_DSN)?multiStatements=true' -source 'file://deployments/mysql/migration' -verbose up
+	# migrate -database 'postgres://$(POSTGRES_DSN)?sslmode=disable' -source 'file://deployments/postgres/migration' -verbose up
 
 migrate-down:
 	echo y | migrate -database 'mysql://$(MYSQL_DSN)?multiStatements=true' -source 'file://deployments/mysql/migration' -verbose down
+	# echo y | migrate -database 'postgres://$(POSTGRES_DSN)?sslmode=disable' -source 'file://deployments/postgres/migration' -verbose down
 
 show-tables:
 	go run main.go show_tables -f ./conf.d/env.yaml
