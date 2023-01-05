@@ -1,8 +1,9 @@
 package config
 
 type RdbOpts struct {
-	Driver    string    `mapstructure:"driver"` //
-	MysqlOpts MysqlOpts `mapstructure:"mysql"`  //
+	Driver       string       `mapstructure:"driver"`     //
+	MysqlOpts    MysqlOpts    `mapstructure:"mysql"`      //
+	PostgresOpts PostgresOpts `mapstructure:"postgresql"` //
 }
 
 type MysqlOpts struct {
@@ -13,4 +14,12 @@ type MysqlOpts struct {
 	MaxIdleConns    int    `mapstructure:"max_idle_conns"`    //
 	MaxOpenConns    int    `mapstructure:"max_open_conns"`    //
 	ConnMaxLifetime int    `mapstructure:"conn_max_lifetime"` //
+}
+
+type PostgresOpts struct {
+	Host     string `mapstructure:"host"`     //
+	Port     int    `mapstructure:"port"`     //
+	User     string `mapstructure:"user"`     //
+	Password string `mapstructure:"password"` //
+	DBName   string `mapstructure:"dbname"`   //
 }

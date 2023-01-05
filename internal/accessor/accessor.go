@@ -49,6 +49,14 @@ func (a *accessor) InitRDB(ctx context.Context) {
 			a.Config.RDB.MysqlOpts.MaxOpenConns,
 			a.Config.RDB.MysqlOpts.MaxIdleConns,
 		)
+	case "postgresql":
+		a.RDB = rdb.NewPostgresClient(ctx,
+			a.Config.RDB.PostgresOpts.Host,
+			a.Config.RDB.PostgresOpts.Port,
+			a.Config.RDB.PostgresOpts.User,
+			a.Config.RDB.PostgresOpts.Password,
+			a.Config.RDB.PostgresOpts.DBName,
+		)
 	default:
 		logrus.Panicf("RDB driver undifined: %v", a.Config.RDB.Driver)
 	}
