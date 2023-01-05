@@ -39,6 +39,7 @@ init:
 	rm -rf deployments/data
 	mkdir -p deployments/data/mysql
 	mkdir -p deployments/data/postgres
+	mkdir -p deployments/data/pgadmin
 
 	go mod download
 	go mod tidy
@@ -58,11 +59,11 @@ lint:
 
 migrate-up:
 	migrate -database 'mysql://$(MYSQL_DSN)?multiStatements=true' -source 'file://deployments/mysql/migration' -verbose up
-	# migrate -database 'postgres://$(POSTGRES_DSN)?sslmode=disable' -source 'file://deployments/postgres/migration' -verbose up
+	migrate -database 'postgres://$(POSTGRES_DSN)?sslmode=disable' -source 'file://deployments/postgres/migration' -verbose up
 
 migrate-down:
 	echo y | migrate -database 'mysql://$(MYSQL_DSN)?multiStatements=true' -source 'file://deployments/mysql/migration' -verbose down
-	# echo y | migrate -database 'postgres://$(POSTGRES_DSN)?sslmode=disable' -source 'file://deployments/postgres/migration' -verbose down
+	echo y | migrate -database 'postgres://$(POSTGRES_DSN)?sslmode=disable' -source 'file://deployments/postgres/migration' -verbose down
 
 show-tables:
 	go run main.go show_tables -f ./conf.d/env.yaml
