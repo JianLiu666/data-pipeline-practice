@@ -2,6 +2,10 @@
 
 - [Data Pipeline Practice](#data-pipeline-practice)
   - [Goal](#goal)
+  - [Getting Start](#getting-start)
+    - [Prerequisites](#prerequisites)
+    - [Quick install instructions](#quick-install-instructions)
+    - [Usage](#usage)
   - [Project Layout](#project-layout)
   - [References](#references)
     - [Golang-Migrate](#golang-migrate)
@@ -16,6 +20,45 @@
 - POC 練習
 
 --- 
+
+## Getting Start
+
+### Prerequisites
+
+- Go
+- Docker
+
+### Quick install instructions
+
+```shell
+make init
+```
+
+### Usage
+
+建置並啟動相關基礎服務，例如：
+
+- MySQL
+- PostgreSQL
+- pgAdmin
+
+```shell
+make setup-all
+```
+
+執行資料庫 migration 命令
+
+```shell
+make migration-up
+```
+
+更多指令請查閱：
+
+```
+shell help
+```
+
+---
 
 ## Project Layout
 
