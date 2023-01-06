@@ -10,8 +10,8 @@
 
 ## Application
 
-- [ ] Database interface
-  - [ ] MySQL implementation
+- [x] Database interface
+  - [x] MySQL implementation
   - [ ] PostgreSQL implementation
 - [ ] Benchmark
   - [ ] Read committed 
@@ -31,5 +31,5 @@
 
 ## Relational Database Isolation Level
 
-- [ ] 理解 MySQL gap lock & next-key lock
-- [ ] 理解 不可重複讀(Non-repeatable Read) 與 讀偏差(Read Skew) 的區別
+- [x] 理解 MySQL gap lock & next-key lock
+- [x] 理解 不可重複讀(Non-repeatable Read) 與 讀偏差(Read Skew) 的區別
