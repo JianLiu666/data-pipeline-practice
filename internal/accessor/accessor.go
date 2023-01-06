@@ -17,7 +17,7 @@ type accessor struct {
 	shutdownHandlers []shutdownHandler
 
 	Config *config.Config // configuration management
-	RDB    *rdb.Rdb       // relational database instance
+	RDB    rdb.Rdb        // relational database instance
 }
 
 func BuildAccessor() *accessor {
