@@ -13,9 +13,12 @@
 - [x] Database interface
   - [x] MySQL implementation
   - [ ] PostgreSQL implementation
+  - [ ] MongoDB implementation
 - [ ] Benchmark
   - [ ] Read committed 
   - [ ] Snapshot isolation
+- [ ] CDC flow
+  - [ ] From MySQL to MongoDB
 
 ## Mechanisms
 
