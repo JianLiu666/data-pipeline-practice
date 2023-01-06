@@ -36,3 +36,4 @@
 
 - [x] 理解 MySQL gap lock & next-key lock
 - [x] 理解 不可重複讀(Non-repeatable Read) 與 讀偏差(Read Skew) 的區別
+- [ ] MySQL 版本升級差異 v5.7 -> v8.0
