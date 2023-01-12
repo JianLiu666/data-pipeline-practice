@@ -19,6 +19,7 @@
   - [ ] Snapshot isolation
 - [ ] CDC flow
   - [ ] From MySQL to MongoDB
+  - [ ] 設計情境
 
 ## Mechanisms
 
