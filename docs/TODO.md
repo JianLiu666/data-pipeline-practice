@@ -38,4 +38,3 @@
 - [x] 理解 MySQL gap lock & next-key lock
 - [x] 理解 不可重複讀(Non-repeatable Read) 與 讀偏差(Read Skew) 的區別
 - [ ] MySQL 版本升級差異 v5.7 -> v8.0
-- [ ] Case: 2 trxs, trx1 走 primary key 更新資料, trx2 走 covering index 取回資料, 確認 trx2 是否會被 block
