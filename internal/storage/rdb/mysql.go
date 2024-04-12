@@ -62,7 +62,7 @@ func (m *mysql) ShowTables(ctx context.Context) {
 	logrus.Info("========== start ==========")
 	defer logrus.Info("=========== end ===========")
 
-	// bussiness logic
+	// business logic
 	showTablesQuery, err := m.conn.Query("SHOW TABLES")
 	checkError(err, "failed to query:")
 
@@ -181,7 +181,7 @@ func (m *mysql) SimulateDirtyRead(ctx context.Context) {
 	//  +----+-----------------+-----+  | --------------------------------------> |                                       |
 	//  | 1  | 1               | ... |  |                                         |                   START TRANSACTION   |
 	//  +----+-----------------+-----+  |                                         | <------------------------------------ |
-	//                                  |                                         |           SELECT count(*) FROM logs   |  ioslation level 為 read uncommitted 時會讀到
+	//                                  |                                         |           SELECT count(*) FROM logs   |  isolation level 為 read uncommitted 時會讀到
 	//                                  |                                         | <------------------------------------ |  transaction 1 尚未 committed 的資料導致 dirty read
 	//                                  |   ROLLBACK                              |                                       |  必須是 read committed 以上的等級才可避免
 	//                                  | --------------------------------------> |                                       |
@@ -352,7 +352,7 @@ func (m *mysql) SimulateLostUpdate(ctx context.Context) {
 	//     - 要特別注意 transaction failed 時的重試流程，若未能保證冪等性可能造成重複扣款問題
 	//
 	// 2. 自行實現樂觀鎖流程 (CAS)
-	//     - 改寫 UPDATE walltes SET amount = {value} WHERE id = 1 成 UPDATE wallets SET amount = {new} WHERE id = 1 AND amount = {old}
+	//     - 改寫 UPDATE wallets SET amount = {value} WHERE id = 1 成 UPDATE wallets SET amount = {new} WHERE id = 1 AND amount = {old}
 	//     - 強制 transaction 1 更新失敗, 但要自行驗證 transaction 執行結果是否符合預期
 
 	tx2, err := m.conn.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelRepeatableRead})
@@ -458,30 +458,30 @@ func (m *mysql) SimulateWriteSkew1(ctx context.Context) {
 
 		tx2, err := m.conn.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelRepeatableRead})
 		checkError(err, "failed to start transaction:")
-		logrus.Infoln("trnsaction 2 started.")
+		logrus.Infoln("transaction 2 started.")
 
 		var count int
 		err = tx2.QueryRow("SELECT COUNT(amount) FROM wallets").Scan(&count)
 		checkError(err, "failed to querying row:")
-		logrus.Infof("trnsaction 2 selected, count = %v", count)
+		logrus.Infof("transaction 2 selected, count = %v", count)
 
 		time.Sleep(1 * time.Second)
 
 		err = tx2.QueryRow("SELECT COUNT(amount) FROM wallets").Scan(&count)
 		checkError(err, "failed to querying row:")
-		logrus.Infof("trnsaction 2 selected, count = %v", count)
+		logrus.Infof("transaction 2 selected, count = %v", count)
 
 		_, err = tx2.Exec("UPDATE wallets SET amount = amount + 10000")
 		checkError(err, "failed to execute:")
-		logrus.Infoln("trnsaction 2 updated")
+		logrus.Infoln("transaction 2 updated")
 
 		// err = tx2.QueryRow("SELECT COUNT(amount) FROM wallets").Scan(&count)
 		// checkError(err, "failed to querying row:")
-		// logrus.Warnf("trnsaction 2 selected, count = %v", count)
+		// logrus.Warnf("transaction 2 selected, count = %v", count)
 
 		err = tx2.Commit()
 		checkError(err, "failed to commit:")
-		logrus.Infoln("trnsaction 2 committed.")
+		logrus.Infoln("transaction 2 committed.")
 
 	}(wg)
 
@@ -492,7 +492,7 @@ func (m *mysql) SimulateWriteSkew1(ctx context.Context) {
 
 		tx1, err := m.conn.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelRepeatableRead})
 		checkError(err, "failed to start transaction:")
-		logrus.Infoln("trnsaction 1 started.")
+		logrus.Infoln("transaction 1 started.")
 
 		timeNow := time.Now().Format("2006-01-02 15:04:05")
 		_, err = tx1.Exec("INSERT INTO wallets (user_id, amount, created_at, modified_at) VALUES (?, ?, ?, ?);",
@@ -502,11 +502,11 @@ func (m *mysql) SimulateWriteSkew1(ctx context.Context) {
 			timeNow,
 		)
 		checkError(err, "failed to execute:")
-		logrus.Infoln("trnsaction 1 inserted.")
+		logrus.Infoln("transaction 1 inserted.")
 
 		err = tx1.Commit()
 		checkError(err, "failed to commit:")
-		logrus.Infoln("trnsaction 1 committed.")
+		logrus.Infoln("transaction 1 committed.")
 
 	}(wg)
 
@@ -574,8 +574,8 @@ func (m *mysql) SimulateWriteSkew2(ctx context.Context) {
 	//
 	// 1. 自行加上 Explicit Lock
 	//     - 改寫 SELECT amount FROM wallets WHERE id = 1 成 SELECT amount FROM wallets WHERE id = 1 FOR UPDATE
-	//     - 加上排他鎖明確限制同時間只允許一個 transation 進行後續流程
-	//     - 注意 Row Lock 升級成 Netx-key Lock 可能造成的衍生問題
+	//     - 加上排他鎖明確限制同時間只允許一個 transaction 進行後續流程
+	//     - 注意 Row Lock 升級成 Next-key Lock 可能造成的衍生問題
 	//
 	// 2. 將 isolation level 升級成 serializable level
 	//     - 在上述情境中還是無法避免同時 SELECT 後因為業務邏輯產生的 Phantom Read 問題
@@ -588,12 +588,12 @@ func (m *mysql) SimulateWriteSkew2(ctx context.Context) {
 
 		tx1, err := m.conn.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelRepeatableRead})
 		checkError(err, "failed to start transaction:")
-		logrus.Infoln("trnsaction 1 started.")
+		logrus.Infoln("transaction 1 started.")
 
 		var amount int
 		err = tx1.QueryRow("SELECT amount FROM wallets WHERE id = 1").Scan(&amount)
 		checkError(err, "failed to querying row:")
-		logrus.Infoln("trnsaction 1 selected.")
+		logrus.Infoln("transaction 1 selected.")
 
 		time.Sleep(1 * time.Second)
 
@@ -601,12 +601,12 @@ func (m *mysql) SimulateWriteSkew2(ctx context.Context) {
 		if amount > 60000 {
 			_, err = tx1.Exec("UPDATE wallets SET amount = amount - 60000 WHERE id = 1")
 			checkError(err, "failed to execute:")
-			logrus.Infoln("trnsaction 1 updated.")
+			logrus.Infoln("transaction 1 updated.")
 		}
 
 		err = tx1.Commit()
 		checkError(err, "failed to commit:")
-		logrus.Infoln("trnsaction 1 committed.")
+		logrus.Infoln("transaction 1 committed.")
 
 	}(wg)
 
@@ -617,12 +617,12 @@ func (m *mysql) SimulateWriteSkew2(ctx context.Context) {
 
 		tx2, err := m.conn.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelRepeatableRead})
 		checkError(err, "failed to start transaction:")
-		logrus.Infoln("trnsaction 2 started.")
+		logrus.Infoln("transaction 2 started.")
 
 		var amount int
 		err = tx2.QueryRow("SELECT amount FROM wallets WHERE id = 1").Scan(&amount)
 		checkError(err, "failed to querying row:")
-		logrus.Infoln("trnsaction 2 selected.")
+		logrus.Infoln("transaction 2 selected.")
 
 		time.Sleep(1 * time.Second)
 
@@ -630,12 +630,12 @@ func (m *mysql) SimulateWriteSkew2(ctx context.Context) {
 		if amount > 60000 {
 			_, err = tx2.Exec("UPDATE wallets SET amount = amount - 60000 WHERE id = 1")
 			checkError(err, "failed to execute:")
-			logrus.Infoln("trnsaction 2 updated.")
+			logrus.Infoln("transaction 2 updated.")
 		}
 
 		err = tx2.Commit()
 		checkError(err, "failed to commit:")
-		logrus.Infoln("trnsaction 2 committed.")
+		logrus.Infoln("transaction 2 committed.")
 
 	}(wg)
 
@@ -708,18 +708,18 @@ func (m *mysql) SimulateLockFailed1(ctx context.Context) {
 
 		tx1, err := m.conn.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelRepeatableRead})
 		checkError(err, "failed to start transaction:")
-		logrus.Infoln("trnsaction 1 started.")
+		logrus.Infoln("transaction 1 started.")
 
 		var id int
 		err = tx1.QueryRow("SELECT id FROM wallets WHERE user_id = 1 LOCK IN SHARE MODE").Scan(&id)
 		checkError(err, "failed to querying row:")
-		logrus.Infoln("trnsaction 1 selected")
+		logrus.Infoln("transaction 1 selected")
 
 		time.Sleep(1 * time.Second)
 
 		err = tx1.Commit()
 		checkError(err, "failed to commit:")
-		logrus.Infoln("trnsaction 1 committed.")
+		logrus.Infoln("transaction 1 committed.")
 
 	}(wg)
 
@@ -730,15 +730,15 @@ func (m *mysql) SimulateLockFailed1(ctx context.Context) {
 
 		tx2, err := m.conn.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelRepeatableRead})
 		checkError(err, "failed to start transaction:")
-		logrus.Infoln("trnsaction 2 started.")
+		logrus.Infoln("transaction 2 started.")
 
 		_, err = tx2.Exec("UPDATE wallets SET amount = amount - 10000 WHERE id = 1")
 		checkError(err, "failed to execute:")
-		logrus.Infoln("trnsaction 2 updated.")
+		logrus.Infoln("transaction 2 updated.")
 
 		err = tx2.Commit()
 		checkError(err, "failed to commit:")
-		logrus.Infoln("trnsaction 2 committed.")
+		logrus.Infoln("transaction 2 committed.")
 
 	}(wg)
 
